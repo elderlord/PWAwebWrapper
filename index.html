@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="웹 어플리케이션을 PWA 환경으로 전달하는 래퍼">
+    <meta name="theme-color" content="#4A90E2">
+    <title>PWA Web Wrapper</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="icon" type="image/png" href="/icon-192.png">
+</head>
+<body>
+    <div id="input-container">
+        <div class="input-wrapper">
+            <h1>PWA Web Wrapper</h1>
+            <p>웹 어플리케이션 URL을 입력하여 전체화면으로 실행하세요</p>
+            <div class="url-input-group">
+                <input
+                    type="url"
+                    id="url-input"
+                    placeholder="https://example.com"
+                    autocomplete="url"
+                    required
+                />
+                <button id="load-btn">실행</button>
+            </div>
+            <div id="error-message" class="error-message"></div>
+        </div>
+    </div>
+
+    <div id="app-container" style="display: none;">
+        <div id="toolbar">
+            <button id="back-btn" title="뒤로가기">←</button>
+            <button id="reload-btn" title="새로고침">⟳</button>
+            <span id="current-url"></span>
+            <button id="fullscreen-btn" title="전체화면">⛶</button>
+            <button id="close-btn" title="닫기">✕</button>
+        </div>
+        <iframe id="app-frame" allowfullscreen sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"></iframe>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
