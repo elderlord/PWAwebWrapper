@@ -127,3 +127,120 @@ body {
   font-size: 20px;
   opacity: 0.8;
 }
+
+/* Block Screen */
+#block-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.block-message {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 800px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.block-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+}
+
+.block-message h2 {
+  font-size: 32px;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.block-message .site-name {
+  font-size: 24px;
+  color: #667eea;
+  margin-bottom: 20px;
+}
+
+.block-reason {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.block-help {
+  background: #f5f7ff;
+  border-radius: 12px;
+  padding: 30px;
+  margin: 30px 0;
+  text-align: left;
+}
+
+.block-help p {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.block-help ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.block-help ul:last-child {
+  margin-bottom: 0;
+}
+
+.block-help li {
+  font-size: 14px;
+  color: #666;
+  padding: 5px 0;
+  padding-left: 25px;
+  position: relative;
+}
+
+.block-help li::before {
+  content: "•";
+  position: absolute;
+  left: 10px;
+  color: #667eea;
+}
+
+.block-message .hint {
+  font-size: 16px;
+  color: #999;
+  margin-top: 30px;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .block-message {
+    padding: 30px 20px;
+  }
+
+  .block-icon {
+    font-size: 60px;
+  }
+
+  .block-message h2 {
+    font-size: 24px;
+  }
+
+  .block-message .site-name {
+    font-size: 20px;
+  }
+
+  .block-help {
+    padding: 20px;
+  }
+}
