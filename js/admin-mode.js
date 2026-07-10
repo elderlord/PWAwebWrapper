@@ -231,20 +231,152 @@ const AdminMode = {
   },
 
   _showAddWebappModal() {
-    // Placeholder - will implement in Task 5
-    alert('웹앱 추가 모달은 Task 5에서 구현됩니다');
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <h3>새 웹앱 추가</h3>
+        <div class="form-group">
+          <label class="form-label">이름</label>
+          <input type="text" class="form-input" id="modal-webapp-name"
+                 placeholder="전시 소개" maxlength="50">
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL</label>
+          <input type="url" class="form-input" id="modal-webapp-url"
+                 placeholder="https://example.com">
+        </div>
+        <div id="modal-error" style="color: #f44336; margin-top: 10px;"></div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="modal-cancel">취소</button>
+          <button class="btn btn-primary" id="modal-add">추가</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const nameInput = document.getElementById('modal-webapp-name');
+    const urlInput = document.getElementById('modal-webapp-url');
+    const errorDiv = document.getElementById('modal-error');
+
+    // Focus name input
+    nameInput.focus();
+
+    // Cancel button
+    document.getElementById('modal-cancel').addEventListener('click', () => {
+      overlay.remove();
+    });
+
+    // Add button
+    document.getElementById('modal-add').addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      const url = urlInput.value.trim();
+
+      errorDiv.textContent = '';
+
+      try {
+        Storage.addWebapp(name, url);
+        overlay.remove();
+        this.refreshWebappList();
+        alert('웹앱이 추가되었습니다');
+      } catch (e) {
+        errorDiv.textContent = e.message;
+      }
+    });
+
+    // Enter key to submit
+    overlay.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('modal-add').click();
+      }
+    });
   },
 
   _showEditWebappModal(webappId) {
-    // Placeholder - will implement in Task 5
-    alert(`웹앱 편집 모달 (ID: ${webappId})은 Task 5에서 구현됩니다`);
+    const webapps = Storage.loadWebapps();
+    const webapp = webapps.find(w => w.id === webappId);
+
+    if (!webapp) {
+      alert('웹앱을 찾을 수 없습니다');
+      return;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <h3>웹앱 편집</h3>
+        <div class="form-group">
+          <label class="form-label">이름</label>
+          <input type="text" class="form-input" id="modal-webapp-name"
+                 value="${this._escapeHtml(webapp.name)}" maxlength="50">
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL</label>
+          <input type="url" class="form-input" id="modal-webapp-url"
+                 value="${this._escapeHtml(webapp.url)}">
+        </div>
+        <div id="modal-error" style="color: #f44336; margin-top: 10px;"></div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="modal-cancel">취소</button>
+          <button class="btn btn-primary" id="modal-save">저장</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const nameInput = document.getElementById('modal-webapp-name');
+    const urlInput = document.getElementById('modal-webapp-url');
+    const errorDiv = document.getElementById('modal-error');
+
+    nameInput.focus();
+
+    document.getElementById('modal-cancel').addEventListener('click', () => {
+      overlay.remove();
+    });
+
+    document.getElementById('modal-save').addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      const url = urlInput.value.trim();
+
+      errorDiv.textContent = '';
+
+      try {
+        Storage.updateWebapp(webappId, { name, url });
+        overlay.remove();
+        this.refreshWebappList();
+        alert('웹앱이 수정되었습니다');
+      } catch (e) {
+        errorDiv.textContent = e.message;
+      }
+    });
   },
 
   _showDeleteConfirm(webappId) {
-    // Placeholder - will implement in Task 5
-    if (confirm('정말 삭제하시겠습니까?')) {
+    const webapps = Storage.loadWebapps();
+    const webapp = webapps.find(w => w.id === webappId);
+    const defaultId = Storage.getDefaultWebappId();
+
+    if (!webapp) {
+      alert('웹앱을 찾을 수 없습니다');
+      return;
+    }
+
+    let message = `"${webapp.name}"을(를) 정말 삭제하시겠습니까?`;
+
+    if (webappId === defaultId) {
+      message += '\n\n이 웹앱은 기본 웹앱입니다. 삭제 후 다른 웹앱을 기본으로 설정해야 합니다.';
+    }
+
+    if (confirm(message)) {
       Storage.deleteWebapp(webappId);
       this.refreshWebappList();
+
+      if (webappId === defaultId) {
+        alert('다른 웹앱을 기본으로 설정하세요');
+      }
     }
   },
 
