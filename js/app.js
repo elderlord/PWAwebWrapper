@@ -27,6 +27,7 @@ const App = {
   },
 
   switchToAdminMode() {
+    this.hiddenTouchDetector.detach();
     KioskMode.hide();
     AdminMode.show();
   },
@@ -34,15 +35,16 @@ const App = {
   switchToKioskMode(webappId = null) {
     AdminMode.hide();
 
+    // Update hidden touch config and re-attach (before showing kiosk)
+    const config = Storage.getHiddenTouchConfig();
+    this.hiddenTouchDetector.updateConfig(config);
+    this.hiddenTouchDetector.attachTo(document.body);
+
     if (webappId) {
       KioskMode.loadWebapp(webappId);
     }
 
     KioskMode.show();
-
-    // Update hidden touch config (in case it changed)
-    const config = Storage.getHiddenTouchConfig();
-    this.hiddenTouchDetector.updateConfig(config);
   }
 };
 
