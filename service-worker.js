@@ -1,17 +1,16 @@
 const CACHE_NAME = 'kiosk-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/styles/kiosk.css',
-  '/styles/admin.css',
-  '/js/app.js',
-  '/js/kiosk-mode.js',
-  '/js/admin-mode.js',
-  '/js/storage.js',
-  '/js/hidden-touch.js',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  './index.html',
+  './styles/kiosk.css',
+  './styles/admin.css',
+  './js/app.js',
+  './js/kiosk-mode.js',
+  './js/admin-mode.js',
+  './js/storage.js',
+  './js/hidden-touch.js',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 // Install event - cache resources
@@ -20,7 +19,19 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        // Try to cache all resources at once
+        return cache.addAll(urlsToCache).catch((error) => {
+          console.error('cache.addAll failed, falling back to individual caching:', error);
+          // Fallback: cache resources individually to handle partial failures
+          return Promise.all(
+            urlsToCache.map((url) => {
+              return cache.add(url).catch((err) => {
+                console.warn('Failed to cache:', url, err);
+                // Continue even if individual resource fails
+              });
+            })
+          );
+        });
       })
       .then(() => self.skipWaiting())
   );
@@ -67,7 +78,7 @@ self.addEventListener('fetch', (event) => {
 
         return fetch(fetchRequest).then((response) => {
           // Check if valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+          if (!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
             return response;
           }
 
@@ -85,7 +96,7 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => {
         // Return cached index.html as fallback
-        return caches.match('/index.html');
+        return caches.match('./index.html');
       })
   );
 });
