@@ -35,13 +35,13 @@ const Storage = {
   loadWebapps() {
     try {
       const data = localStorage.getItem(KEYS.WEBAPPS);
-      if (!data) return DEFAULTS.webapps;
+      if (!data) return [...DEFAULTS.webapps];
 
       const webapps = JSON.parse(data);
       if (!Array.isArray(webapps)) {
         console.error('Invalid webapps data, resetting');
         localStorage.setItem(KEYS.WEBAPPS, JSON.stringify(DEFAULTS.webapps));
-        return DEFAULTS.webapps;
+        return [...DEFAULTS.webapps];
       }
 
       // Validate schema of each element
@@ -57,13 +57,13 @@ const Storage = {
       if (!isValid) {
         console.error('Corrupted webapp data detected, resetting');
         localStorage.setItem(KEYS.WEBAPPS, JSON.stringify(DEFAULTS.webapps));
-        return DEFAULTS.webapps;
+        return [...DEFAULTS.webapps];
       }
 
       return webapps;
     } catch (e) {
       console.error('Error loading webapps:', e);
-      return DEFAULTS.webapps;
+      return [...DEFAULTS.webapps];
     }
   },
 
