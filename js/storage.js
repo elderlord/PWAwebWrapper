@@ -17,19 +17,35 @@ const Storage = {
   loadWebapps() {
     try {
       const data = localStorage.getItem(KEYS.WEBAPPS);
-      if (!data) return DEFAULTS.webapps;
+      if (!data) return [...DEFAULTS.webapps];
 
       const webapps = JSON.parse(data);
       if (!Array.isArray(webapps)) {
         console.error('Invalid webapps data, resetting');
         localStorage.setItem(KEYS.WEBAPPS, JSON.stringify(DEFAULTS.webapps));
-        return DEFAULTS.webapps;
+        return [...DEFAULTS.webapps];
+      }
+
+      // Validate schema of each element
+      const isValid = webapps.every(w =>
+        w &&
+        typeof w === 'object' &&
+        typeof w.id === 'string' &&
+        typeof w.name === 'string' &&
+        typeof w.url === 'string' &&
+        typeof w.createdAt === 'string'
+      );
+
+      if (!isValid) {
+        console.error('Corrupted webapp data detected, resetting');
+        localStorage.setItem(KEYS.WEBAPPS, JSON.stringify(DEFAULTS.webapps));
+        return [...DEFAULTS.webapps];
       }
 
       return webapps;
     } catch (e) {
       console.error('Error loading webapps:', e);
-      return DEFAULTS.webapps;
+      return [...DEFAULTS.webapps];
     }
   },
 
@@ -56,27 +72,33 @@ const Storage = {
   },
 
   addWebapp(name, url) {
+    // Trim name before validation to prevent whitespace-only names
+    const trimmedName = name ? name.trim() : '';
+
     // Validate name
-    if (!name || name.length < 1 || name.length > 50) {
+    if (!trimmedName || trimmedName.length < 1 || trimmedName.length > 50) {
       throw new Error('Name must be 1-50 characters');
     }
 
+    // Trim URL before validation
+    const trimmedUrl = url ? url.trim() : '';
+
     // Validate URL
-    if (!url || !(url.startsWith('http://') || url.startsWith('https://'))) {
+    if (!trimmedUrl || !(trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://'))) {
       throw new Error('URL must start with http:// or https://');
     }
 
     // Check for duplicate URL
     const webapps = this.loadWebapps();
-    if (webapps.some(w => w.url === url)) {
+    if (webapps.some(w => w.url === trimmedUrl)) {
       throw new Error('URL already exists');
     }
 
     // Create new webapp
     const webapp = {
       id: `webapp_${Date.now()}`,
-      name: name.trim(),
-      url: url.trim(),
+      name: trimmedName,
+      url: trimmedUrl,
       createdAt: new Date().toISOString()
     };
 
@@ -102,29 +124,31 @@ const Storage = {
     }
 
     // Validate updates
-    if (updates.name !== undefined) {
-      if (updates.name.length < 1 || updates.name.length > 50) {
+    if (updates.name != null) {
+      const trimmedName = updates.name.trim ? updates.name.trim() : String(updates.name);
+      if (trimmedName.length < 1 || trimmedName.length > 50) {
         throw new Error('Name must be 1-50 characters');
       }
     }
 
-    if (updates.url !== undefined) {
-      if (!(updates.url.startsWith('http://') || updates.url.startsWith('https://'))) {
+    if (updates.url != null) {
+      const trimmedUrl = updates.url.trim ? updates.url.trim() : String(updates.url);
+      if (!(trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://'))) {
         throw new Error('URL must start with http:// or https://');
       }
 
       // Check duplicate URL (excluding self)
-      if (webapps.some((w, i) => i !== index && w.url === updates.url)) {
+      if (webapps.some((w, i) => i !== index && w.url === trimmedUrl)) {
         throw new Error('URL already exists');
       }
     }
 
     // Apply updates
-    if (updates.name !== undefined) {
-      webapps[index].name = updates.name.trim();
+    if (updates.name != null) {
+      webapps[index].name = (updates.name.trim ? updates.name.trim() : String(updates.name));
     }
-    if (updates.url !== undefined) {
-      webapps[index].url = updates.url.trim();
+    if (updates.url != null) {
+      webapps[index].url = (updates.url.trim ? updates.url.trim() : String(updates.url));
     }
 
     localStorage.setItem(KEYS.WEBAPPS, JSON.stringify(webapps));
