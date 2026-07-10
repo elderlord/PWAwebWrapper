@@ -1,13 +1,13 @@
 {
-  "name": "PWA Web Wrapper",
-  "short_name": "PWA Wrapper",
-  "description": "웹 어플리케이션을 PWA 환경으로 전달하는 래퍼",
-  "start_url": "/",
+  "name": "Kiosk WebApp Manager",
+  "short_name": "Kiosk",
+  "description": "전시용 웹앱 키오스크 관리 시스템",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4A90E2",
-  "orientation": "any",
+  "orientation": "landscape",
+  "start_url": "/",
   "scope": "/",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -20,21 +20,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    }
-  ],
-  "categories": ["utilities", "productivity"],
-  "shortcuts": [
-    {
-      "name": "새 웹앱 열기",
-      "short_name": "새로 열기",
-      "description": "새로운 웹 어플리케이션 열기",
-      "url": "/",
-      "icons": [
-        {
-          "src": "/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
     }
   ]
 }

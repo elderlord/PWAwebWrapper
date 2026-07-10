@@ -1,12 +1,17 @@
-// PWA Web Wrapper - Service Worker
-
-const CACHE_NAME = 'pwa-wrapper-v1';
+const CACHE_NAME = 'kiosk-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/styles.css',
-  '/app.js',
-  '/manifest.json'
+  '/styles/kiosk.css',
+  '/styles/admin.css',
+  '/js/app.js',
+  '/js/kiosk-mode.js',
+  '/js/admin-mode.js',
+  '/js/storage.js',
+  '/js/hidden-touch.js',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 // Install event - cache resources
@@ -37,12 +42,22 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - cache-first strategy
 self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Skip chrome-extension and non-http(s) requests
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Cache hit - return response
+        // Cache hit - return cached response
         if (response) {
           return response;
         }
@@ -56,11 +71,9 @@ self.addEventListener('fetch', (event) => {
             return response;
           }
 
-          // Clone the response
-          const responseToCache = response.clone();
-
           // Only cache same-origin requests
           if (event.request.url.startsWith(self.location.origin)) {
+            const responseToCache = response.clone();
             caches.open(CACHE_NAME)
               .then((cache) => {
                 cache.put(event.request, responseToCache);
@@ -71,15 +84,8 @@ self.addEventListener('fetch', (event) => {
         });
       })
       .catch(() => {
-        // Return a custom offline page if available
+        // Return cached index.html as fallback
         return caches.match('/index.html');
       })
   );
-});
-
-// Message event - handle messages from clients
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
 });
