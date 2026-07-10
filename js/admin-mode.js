@@ -236,17 +236,17 @@ const AdminMode = {
       const maxAttempts = parseInt(document.getElementById('setting-max-attempts').value);
 
       // Validate
-      if (tapCount < 3 || tapCount > 10) {
+      if (isNaN(tapCount) || tapCount < 3 || tapCount > 10) {
         alert('탭 횟수는 3-10 사이여야 합니다');
         return;
       }
 
-      if (retryInterval < 1000 || retryInterval > 10000) {
+      if (isNaN(retryInterval) || retryInterval < 1000 || retryInterval > 10000) {
         alert('재시도 간격은 1-10초 사이여야 합니다');
         return;
       }
 
-      if (maxAttempts < 1 || maxAttempts > 20) {
+      if (isNaN(maxAttempts) || maxAttempts < 1 || maxAttempts > 20) {
         alert('최대 재시도 횟수는 1-20 사이여야 합니다');
         return;
       }
