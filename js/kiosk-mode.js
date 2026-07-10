@@ -22,6 +22,11 @@ const KioskMode = {
       this._startAutoRetry();
     });
 
+    // Stop retry on successful load
+    this.iframe.addEventListener('load', () => {
+      this._hideRetryOverlay();
+    });
+
     // Initial load
     const defaultId = Storage.getDefaultWebappId();
     if (defaultId) {
@@ -91,6 +96,9 @@ const KioskMode = {
       this._showError();
       return;
     }
+
+    // Stop existing retry before starting new one
+    this._stopAutoRetry();
 
     this.retryAttempts = 0;
 
