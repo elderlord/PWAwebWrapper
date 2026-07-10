@@ -1,45 +1,47 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="웹 어플리케이션을 PWA 환경으로 전달하는 래퍼">
-    <meta name="theme-color" content="#4A90E2">
-    <title>PWA Web Wrapper</title>
-    <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="icon" type="image/png" href="/icon-192.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Kiosk WebApp Manager</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/styles/kiosk.css">
+  <link rel="stylesheet" href="/styles/admin.css">
 </head>
 <body>
-    <div id="input-container">
-        <div class="input-wrapper">
-            <h1>PWA Web Wrapper</h1>
-            <p>웹 어플리케이션 URL을 입력하여 전체화면으로 실행하세요</p>
-            <div class="url-input-group">
-                <input
-                    type="url"
-                    id="url-input"
-                    placeholder="https://example.com"
-                    autocomplete="url"
-                    required
-                />
-                <button id="load-btn">실행</button>
-            </div>
-            <div id="error-message" class="error-message"></div>
-        </div>
+  <!-- Kiosk Mode Container -->
+  <div id="kiosk-container">
+    <div id="welcome-screen" class="hidden">
+      <h1>Kiosk WebApp Manager</h1>
+      <p>관리자 모드에서 첫 웹앱을 추가하세요</p>
+      <p class="hint">힌트: 좌측 상단을 5번 빠르게 탭하세요</p>
     </div>
 
-    <div id="app-container" style="display: none;">
-        <div id="toolbar">
-            <button id="back-btn" title="뒤로가기">←</button>
-            <button id="reload-btn" title="새로고침">⟳</button>
-            <span id="current-url"></span>
-            <button id="fullscreen-btn" title="전체화면">⛶</button>
-            <button id="close-btn" title="닫기">✕</button>
-        </div>
-        <iframe id="app-frame" allowfullscreen sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"></iframe>
+    <iframe id="webapp-frame" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
+
+    <div id="retry-overlay" class="hidden">
+      <div class="spinner"></div>
+      <p>연결 중...</p>
+      <p id="retry-count"></p>
     </div>
 
-    <script src="/app.js"></script>
+    <div id="error-screen" class="hidden">
+      <h2>네트워크 연결을 확인하세요</h2>
+      <p>관리자 모드에서 다시 시도할 수 있습니다</p>
+    </div>
+  </div>
+
+  <!-- Admin Mode Container (initially hidden) -->
+  <div id="admin-container" class="hidden">
+    <!-- Will be populated by admin-mode.js -->
+  </div>
+
+  <script src="/js/storage.js"></script>
+  <script src="/js/hidden-touch.js"></script>
+  <script src="/js/kiosk-mode.js"></script>
+  <script src="/js/admin-mode.js"></script>
+  <script src="/js/app.js"></script>
 </body>
 </html>
