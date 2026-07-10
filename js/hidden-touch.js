@@ -1,8 +1,10 @@
 // js/hidden-touch.js
 /**
  * HiddenTouchDetector
- * Detects rapid taps in specific screen zones to trigger admin mode
- * Prevents iOS system gestures from interfering
+ * Detects multiple gesture types to trigger admin mode:
+ * 1. Rapid taps in specific screen zones
+ * 2. Long press (3 seconds) anywhere
+ * 3. 3-finger simultaneous tap
  */
 class HiddenTouchDetector {
   constructor(config, onActivate) {
@@ -10,9 +12,19 @@ class HiddenTouchDetector {
     this.tapCount = config.tapCount;   // 3-10
     this.tapTimeout = config.tapTimeout; // ms
     this.onActivate = onActivate;      // callback function
-    this.taps = [];                    // timestamps
-    this.boundHandler = null;
+    this.taps = [];                    // timestamps for tap detection
     this.element = null;               // reference to attached element
+
+    // Gesture handlers
+    this.boundTouchStart = null;
+    this.boundTouchEnd = null;
+    this.boundTouchMove = null;
+
+    // Long press state
+    this.longPressTimer = null;
+    this.longPressDuration = 3000; // 3 seconds
+    this.longPressStartPos = null;
+    this.longPressMoveThreshold = 20; // pixels
   }
 
   /**
@@ -23,19 +35,35 @@ class HiddenTouchDetector {
     this.detach(); // Remove existing listener
 
     this.element = element;
-    this.boundHandler = this._handleTouch.bind(this);
-    element.addEventListener('touchstart', this.boundHandler, { passive: true });
+    this.boundTouchStart = this._handleTouchStart.bind(this);
+    this.boundTouchEnd = this._handleTouchEnd.bind(this);
+    this.boundTouchMove = this._handleTouchMove.bind(this);
+
+    element.addEventListener('touchstart', this.boundTouchStart, { passive: false });
+    element.addEventListener('touchend', this.boundTouchEnd, { passive: true });
+    element.addEventListener('touchmove', this.boundTouchMove, { passive: true });
   }
 
   /**
    * Detach touch detector from element
    */
   detach() {
-    if (this.boundHandler && this.element) {
-      this.element.removeEventListener('touchstart', this.boundHandler);
-      this.boundHandler = null;
+    if (this.element) {
+      if (this.boundTouchStart) {
+        this.element.removeEventListener('touchstart', this.boundTouchStart);
+      }
+      if (this.boundTouchEnd) {
+        this.element.removeEventListener('touchend', this.boundTouchEnd);
+      }
+      if (this.boundTouchMove) {
+        this.element.removeEventListener('touchmove', this.boundTouchMove);
+      }
+      this.boundTouchStart = null;
+      this.boundTouchEnd = null;
+      this.boundTouchMove = null;
       this.element = null;
     }
+    this._clearLongPress();
   }
 
   /**
@@ -51,17 +79,37 @@ class HiddenTouchDetector {
 
   /**
    * Handle touch start events
+   * Detects: 3-finger tap, starts long press timer, zone-based tap counting
    * @private
    * @param {TouchEvent} event - Touch event
    */
-  _handleTouch(event) {
-    // Only process first touch (ignore multi-touch)
-    if (event.touches.length !== 1) return;
+  _handleTouchStart(event) {
+    const touchCount = event.touches.length;
+
+    // Method 3: 3-finger simultaneous tap
+    if (touchCount === 3) {
+      this._clearLongPress();
+      this.taps = [];
+      this.onActivate?.();
+      return;
+    }
+
+    // Only process single touch for other methods
+    if (touchCount !== 1) return;
 
     const touch = event.touches[0];
     const x = touch.clientX / window.innerWidth;
     const y = touch.clientY / window.innerHeight;
 
+    // Method 2: Long press (3 seconds)
+    this.longPressStartPos = { x: touch.clientX, y: touch.clientY };
+    this._clearLongPress();
+    this.longPressTimer = setTimeout(() => {
+      this.taps = [];
+      this.onActivate?.();
+    }, this.longPressDuration);
+
+    // Method 1: Zone-based rapid taps
     // Check if touch is in active zone
     if (!this._isInZone(x, y)) return;
 
@@ -75,9 +123,53 @@ class HiddenTouchDetector {
 
     // Check if threshold reached
     if (this.taps.length >= this.tapCount) {
+      this._clearLongPress();
       this.taps = [];
       this.onActivate?.();
     }
+  }
+
+  /**
+   * Handle touch end events
+   * Clears long press timer when finger lifts
+   * @private
+   * @param {TouchEvent} event - Touch event
+   */
+  _handleTouchEnd(event) {
+    this._clearLongPress();
+  }
+
+  /**
+   * Handle touch move events
+   * Cancels long press if finger moves too much
+   * @private
+   * @param {TouchEvent} event - Touch event
+   */
+  _handleTouchMove(event) {
+    if (!this.longPressStartPos || !this.longPressTimer) return;
+    if (event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    const dx = touch.clientX - this.longPressStartPos.x;
+    const dy = touch.clientY - this.longPressStartPos.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Cancel long press if moved beyond threshold
+    if (distance > this.longPressMoveThreshold) {
+      this._clearLongPress();
+    }
+  }
+
+  /**
+   * Clear long press timer and state
+   * @private
+   */
+  _clearLongPress() {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+    this.longPressStartPos = null;
   }
 
   /**
@@ -105,20 +197,22 @@ class HiddenTouchDetector {
 
 /**
  * Prevent iOS system gestures that could interfere with the kiosk
- * - Multi-touch (iOS system gestures)
- * - Context menu (long press)
+ * - Multi-touch (iOS system gestures) - EXCEPT 3-finger tap for admin mode
+ * - Context menu (long press) - EXCEPT our 3-second long press for admin mode
  * - Double-tap zoom
  * @static
  */
 HiddenTouchDetector.preventIOSGestures = function() {
-  // Prevent multi-touch (iOS system gestures)
+  // Prevent multi-touch EXCEPT 3-finger tap (our admin gesture)
   document.addEventListener('touchstart', (e) => {
-    if (e.touches.length > 1) {
+    if (e.touches.length > 1 && e.touches.length !== 3) {
       e.preventDefault();
     }
   }, { passive: false });
 
-  // Prevent context menu (long press)
+  // Prevent context menu, but allow our long press to work
+  // Context menu fires after ~500ms, our long press is 3000ms
+  // We'll prevent it to avoid conflicts
   document.addEventListener('contextmenu', (e) => {
     e.preventDefault();
   });
