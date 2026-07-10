@@ -231,6 +231,9 @@ const AdminMode = {
   },
 
   _showAddWebappModal() {
+    if (this._modalOpen) return;
+    this._modalOpen = true;
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
@@ -266,6 +269,7 @@ const AdminMode = {
     // Cancel button
     document.getElementById('modal-cancel').addEventListener('click', () => {
       overlay.remove();
+      this._modalOpen = false;
     });
 
     // Add button
@@ -278,6 +282,7 @@ const AdminMode = {
       try {
         Storage.addWebapp(name, url);
         overlay.remove();
+        this._modalOpen = false;
         this.refreshWebappList();
         alert('웹앱이 추가되었습니다');
       } catch (e) {
@@ -294,11 +299,15 @@ const AdminMode = {
   },
 
   _showEditWebappModal(webappId) {
+    if (this._modalOpen) return;
+    this._modalOpen = true;
+
     const webapps = Storage.loadWebapps();
     const webapp = webapps.find(w => w.id === webappId);
 
     if (!webapp) {
       alert('웹앱을 찾을 수 없습니다');
+      this._modalOpen = false;
       return;
     }
 
@@ -309,13 +318,11 @@ const AdminMode = {
         <h3>웹앱 편집</h3>
         <div class="form-group">
           <label class="form-label">이름</label>
-          <input type="text" class="form-input" id="modal-webapp-name"
-                 value="${this._escapeHtml(webapp.name)}" maxlength="50">
+          <input type="text" class="form-input" id="modal-webapp-name" maxlength="50">
         </div>
         <div class="form-group">
           <label class="form-label">URL</label>
-          <input type="url" class="form-input" id="modal-webapp-url"
-                 value="${this._escapeHtml(webapp.url)}">
+          <input type="url" class="form-input" id="modal-webapp-url">
         </div>
         <div id="modal-error" style="color: #f44336; margin-top: 10px;"></div>
         <div class="modal-actions">
@@ -331,10 +338,15 @@ const AdminMode = {
     const urlInput = document.getElementById('modal-webapp-url');
     const errorDiv = document.getElementById('modal-error');
 
+    // Set values via DOM to prevent XSS
+    nameInput.value = webapp.name;
+    urlInput.value = webapp.url;
+
     nameInput.focus();
 
     document.getElementById('modal-cancel').addEventListener('click', () => {
       overlay.remove();
+      this._modalOpen = false;
     });
 
     document.getElementById('modal-save').addEventListener('click', () => {
@@ -346,10 +358,18 @@ const AdminMode = {
       try {
         Storage.updateWebapp(webappId, { name, url });
         overlay.remove();
+        this._modalOpen = false;
         this.refreshWebappList();
         alert('웹앱이 수정되었습니다');
       } catch (e) {
         errorDiv.textContent = e.message;
+      }
+    });
+
+    // Enter key to submit
+    overlay.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('modal-save').click();
       }
     });
   },
