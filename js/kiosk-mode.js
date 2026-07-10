@@ -15,6 +15,7 @@ const KioskMode = {
     this.welcomeScreen = document.getElementById('welcome-screen');
     this.retryOverlay = document.getElementById('retry-overlay');
     this.errorScreen = document.getElementById('error-screen');
+    this.blockScreen = document.getElementById('block-screen');
 
     // Setup iframe error handler
     this.iframe.addEventListener('error', () => {
@@ -22,9 +23,10 @@ const KioskMode = {
       this._startAutoRetry();
     });
 
-    // Stop retry on successful load
+    // Stop retry on successful load and check for blocking
     this.iframe.addEventListener('load', () => {
       this._hideRetryOverlay();
+      this._checkIframeBlocking();
     });
 
     // Initial load
@@ -57,6 +59,7 @@ const KioskMode = {
     // Hide everything
     this.welcomeScreen.classList.add('hidden');
     this.errorScreen.classList.add('hidden');
+    this.hideBlockScreen();
     this._hideRetryOverlay();
 
     // Load webapp
@@ -69,6 +72,7 @@ const KioskMode = {
     this.iframe.classList.add('hidden');
     this.iframe.src = '';
     this.errorScreen.classList.add('hidden');
+    this.hideBlockScreen();
     this._hideRetryOverlay();
     this.welcomeScreen.classList.remove('hidden');
   },
@@ -143,5 +147,48 @@ const KioskMode = {
     this._hideRetryOverlay();
     this.iframe.classList.add('hidden');
     this.errorScreen.classList.remove('hidden');
+  },
+
+  _checkIframeBlocking() {
+    // Check if iframe might be blocked (X-Frame-Options, CSP)
+    setTimeout(() => {
+      try {
+        // Try to access iframe content
+        const iframeDoc = this.iframe.contentDocument || this.iframe.contentWindow.document;
+
+        // If we can access but body is empty or very minimal, might be blocked
+        if (!iframeDoc || !iframeDoc.body || iframeDoc.body.children.length === 0) {
+          this._showBlockedMessage();
+        }
+      } catch (e) {
+        // Cross-origin or blocked - show message
+        if (e.name === 'SecurityError' || e.message.includes('cross-origin')) {
+          // This is normal for cross-origin iframes, don't show error
+          return;
+        }
+        this._showBlockedMessage();
+      }
+    }, 2000); // Wait 2 seconds for content to load
+  },
+
+  _showBlockedMessage() {
+    const webapps = Storage.loadWebapps();
+    const webapp = webapps.find(w => w.id === this.currentWebappId);
+
+    if (webapp && this.blockScreen) {
+      const siteNameEl = this.blockScreen.querySelector('#blocked-site-name');
+      if (siteNameEl) {
+        siteNameEl.textContent = webapp.name;
+      }
+
+      this.iframe.classList.add('hidden');
+      this.blockScreen.classList.remove('hidden');
+    }
+  },
+
+  hideBlockScreen() {
+    if (this.blockScreen) {
+      this.blockScreen.classList.add('hidden');
+    }
   }
 };
