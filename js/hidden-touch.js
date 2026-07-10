@@ -3,7 +3,7 @@
  * HiddenTouchDetector
  * Detects multiple gesture types to trigger admin mode:
  * 1. Rapid taps in specific screen zones
- * 2. Long press (3 seconds) anywhere
+ * 2. Long press (8 seconds) anywhere
  * 3. 3-finger simultaneous tap
  */
 class HiddenTouchDetector {
@@ -22,7 +22,7 @@ class HiddenTouchDetector {
 
     // Long press state
     this.longPressTimer = null;
-    this.longPressDuration = 3000; // 3 seconds
+    this.longPressDuration = 8000; // 8 seconds
     this.longPressStartPos = null;
     this.longPressMoveThreshold = 20; // pixels
   }
