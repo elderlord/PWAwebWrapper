@@ -222,8 +222,11 @@ const AdminMode = {
     const autoRetryToggle = document.getElementById('setting-auto-retry');
     if (autoRetryToggle) {
       autoRetryToggle.addEventListener('change', (e) => {
-        const label = e.target.closest('.form-toggle').querySelector('span');
-        label.textContent = e.target.checked ? '켜짐' : '꺼짐';
+        const formToggle = e.target.closest('.form-toggle');
+        const label = formToggle?.querySelector('label + span');
+        if (label) {
+          label.textContent = e.target.checked ? '켜짐' : '꺼짐';
+        }
       });
     }
 
