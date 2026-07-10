@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings Management Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .pass {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .fail {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    h2 {
+      color: #333;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Task 6: Settings Management Test</h1>
+  <div id="test-results"></div>
+  <button onclick="runAllTests()">Run All Tests</button>
+
+  <script src="js/storage.js"></script>
+  <script src="js/admin-mode.js"></script>
+
+  <script>
+    const results = [];
+
+    function assert(condition, testName) {
+      const result = {
+        name: testName,
+        passed: condition
+      };
+      results.push(result);
+      return condition;
+    }
+
+    function displayResults() {
+      const container = document.getElementById('test-results');
+      container.innerHTML = '<h2>Test Results</h2>';
+
+      const passed = results.filter(r => r.passed).length;
+      const total = results.length;
+
+      container.innerHTML += `<p><strong>Total: ${passed}/${total} tests passed</strong></p>`;
+
+      results.forEach(result => {
+        const div = document.createElement('div');
+        div.className = `test-result ${result.passed ? 'pass' : 'fail'}`;
+        div.textContent = `${result.passed ? '✓' : '✗'} ${result.name}`;
+        container.appendChild(div);
+      });
+    }
+
+    // Override alert to capture messages
+    const alertMessages = [];
+    const originalAlert = window.alert;
+    window.alert = function(msg) {
+      alertMessages.push(msg);
+      console.log('Alert:', msg);
+    };
+
+    function setupTestEnvironment() {
+      // Create container for admin mode
+      let container = document.getElementById('admin-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'admin-container';
+        container.className = 'hidden';
+        document.body.appendChild(container);
+      }
+
+      // Initialize admin mode
+      AdminMode.init(container);
+      AdminMode.show();
+
+      // Switch to settings tab
+      AdminMode._switchTab('settings');
+    }
+
+    function runAllTests() {
+      results.length = 0;
+      alertMessages.length = 0;
+
+      console.log('Starting Settings Management Tests...');
+
+      setupTestEnvironment();
+
+      // Test 1: Valid settings save
+      console.log('\nTest 1: Save valid settings');
+      document.getElementById('setting-zone').value = 'top-right';
+      document.getElementById('setting-tap-count').value = '5';
+      document.getElementById('setting-auto-retry').checked = true;
+      document.getElementById('setting-retry-interval').value = '3';
+      document.getElementById('setting-max-attempts').value = '10';
+
+      alertMessages.length = 0;
+      document.getElementById('btn-save-settings').click();
+
+      assert(
+        alertMessages.length === 1 && alertMessages[0].includes('저장되었습니다'),
+        'Test 1: Save button shows success message'
+      );
+
+      const hiddenTouch = Storage.getHiddenTouchConfig();
+      assert(hiddenTouch.zone === 'top-right', 'Test 1: Zone saved correctly');
+      assert(hiddenTouch.tapCount === 5, 'Test 1: Tap count saved correctly');
+
+      const settings = Storage.getSettings();
+      assert(settings.autoRetryEnabled === true, 'Test 1: Auto-retry enabled saved correctly');
+      assert(settings.retryInterval === 3000, 'Test 1: Retry interval saved correctly (in ms)');
+      assert(settings.retryMaxAttempts === 10, 'Test 1: Max attempts saved correctly');
+
+      // Test 2: Invalid tap count (too low)
+      console.log('\nTest 2: Invalid tap count (too low)');
+      document.getElementById('setting-tap-count').value = '2';
+      alertMessages.length = 0;
+      document.getElementById('btn-save-settings').click();
+
+      assert(
+        alertMessages.length === 1 && alertMessages[0].includes('3-10'),
+        'Test 2: Shows error for tap count < 3'
+      );
+
+      // Test 3: Invalid tap count (too high)
+      console.log('\nTest 3: Invalid tap count (too high)');
+      document.getElementById('setting-tap-count').value = '15';
+      alertMessages.length = 0;
+      document.getElementById('btn-save-settings').click();
+
+      assert(
+        alertMessages.length === 1 && alertMessages[0].includes('3-10'),
+        'Test 3: Shows error for tap count > 10'
+      );
+
+      // Test 4: Invalid retry interval (too low)
+      console.log('\nTest 4: Invalid retry interval (too low)');
+      document.getElementById('setting-tap-count').value = '5'; // Reset to valid
+      document.getElementById('setting-retry-interval').value = '0';
+      alertMessages.length = 0;
+      document.getElementById('btn-save-settings').click();
+
+      assert(
+        alertMessages.length === 1 && alertMessages[0].includes('1-10초'),
+        'Test 4: Shows error for retry interval < 1'
+      );
+
+      // Test 5: Invalid retry interval (too high)
+      console.log('\nTest 5: Invalid retry interval (too high)');
+      document.getElementById('setting-retry-interval').value = '15';
+      alertMessages.length = 0;
+      document.getElementById('btn-save-settings').click();
+
+      assert(
+        alertMessages.length === 1 && alertMessages[0].includes('1-10초'),
+        'Test 5: Shows error for retry interval > 10'
+      );
+
+      // Test 6: Invalid max attempts (too low)
+      console.log('\nTest 6: Invalid max attempts (too low)');
+      document.getElementById('setting-retry-interval').value = '5'; // Reset to valid
+      document.getElementById('setting-max-attempts').value = '0';
+      alertMessages.length = 0;
+      document.getElementById('btn-save-settings').click();
+
+      assert(
+        alertMessages.length === 1 && alertMessages[0].includes('1-20'),
+        'Test 6: Shows error for max attempts < 1'
+      );
+
+      // Test 7: Invalid max attempts (too high)
+      console.log('\nTest 7: Invalid max attempts (too high)');
+      document.getElementById('setting-max-attempts').value = '25';
+      alertMessages.length = 0;
+      document.getElementById('btn-save-settings').click();
+
+      assert(
+        alertMessages.length === 1 && alertMessages[0].includes('1-20'),
+        'Test 7: Shows error for max attempts > 20'
+      );
+
+      // Test 8: Toggle auto-retry off
+      console.log('\nTest 8: Toggle auto-retry off');
+      document.getElementById('setting-max-attempts').value = '10'; // Reset to valid
+      document.getElementById('setting-auto-retry').checked = false;
+
+      // Trigger change event to update label
+      const changeEvent = new Event('change', { bubbles: true });
+      document.getElementById('setting-auto-retry').dispatchEvent(changeEvent);
+
+      const toggleLabel = document.querySelector('.form-toggle span');
+      assert(toggleLabel.textContent === '꺼짐', 'Test 8: Toggle label updates to "꺼짐"');
+
+      alertMessages.length = 0;
+      document.getElementById('btn-save-settings').click();
+
+      const settingsAfterToggle = Storage.getSettings();
+      assert(
+        settingsAfterToggle.autoRetryEnabled === false,
+        'Test 8: Auto-retry disabled saved correctly'
+      );
+
+      // Test 9: Toggle auto-retry on
+      console.log('\nTest 9: Toggle auto-retry on');
+      document.getElementById('setting-auto-retry').checked = true;
+      document.getElementById('setting-auto-retry').dispatchEvent(changeEvent);
+
+      assert(toggleLabel.textContent === '켜짐', 'Test 9: Toggle label updates to "켜짐"');
+
+      // Test 10: Boundary values (min)
+      console.log('\nTest 10: Boundary values (min)');
+      document.getElementById('setting-tap-count').value = '3';
+      document.getElementById('setting-retry-interval').value = '1';
+      document.getElementById('setting-max-attempts').value = '1';
+
+      alertMessages.length = 0;
+      document.getElementById('btn-save-settings').click();
+
+      assert(
+        alertMessages.length === 1 && alertMessages[0].includes('저장되었습니다'),
+        'Test 10: Min boundary values accepted'
+      );
+
+      const minSettings = Storage.getHiddenTouchConfig();
+      const minRetrySettings = Storage.getSettings();
+      assert(minSettings.tapCount === 3, 'Test 10: Min tap count (3) saved');
+      assert(minRetrySettings.retryInterval === 1000, 'Test 10: Min retry interval (1s) saved');
+      assert(minRetrySettings.retryMaxAttempts === 1, 'Test 10: Min max attempts (1) saved');
+
+      // Test 11: Boundary values (max)
+      console.log('\nTest 11: Boundary values (max)');
+      document.getElementById('setting-tap-count').value = '10';
+      document.getElementById('setting-retry-interval').value = '10';
+      document.getElementById('setting-max-attempts').value = '20';
+
+      alertMessages.length = 0;
+      document.getElementById('btn-save-settings').click();
+
+      assert(
+        alertMessages.length === 1 && alertMessages[0].includes('저장되었습니다'),
+        'Test 11: Max boundary values accepted'
+      );
+
+      const maxSettings = Storage.getHiddenTouchConfig();
+      const maxRetrySettings = Storage.getSettings();
+      assert(maxSettings.tapCount === 10, 'Test 11: Max tap count (10) saved');
+      assert(maxRetrySettings.retryInterval === 10000, 'Test 11: Max retry interval (10s) saved');
+      assert(maxRetrySettings.retryMaxAttempts === 20, 'Test 11: Max max attempts (20) saved');
+
+      // Test 12: All zone options
+      console.log('\nTest 12: All zone options');
+      const zones = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+      let allZonesPassed = true;
+
+      zones.forEach(zone => {
+        document.getElementById('setting-zone').value = zone;
+        document.getElementById('btn-save-settings').click();
+        const savedZone = Storage.getHiddenTouchConfig().zone;
+        if (savedZone !== zone) {
+          allZonesPassed = false;
+        }
+      });
+
+      assert(allZonesPassed, 'Test 12: All zone options save correctly');
+
+      console.log('\nAll tests completed!');
+      displayResults();
+
+      // Restore original alert
+      window.alert = originalAlert;
+    }
+
+    // Auto-run tests on load
+    window.addEventListener('load', () => {
+      setTimeout(runAllTests, 500);
+    });
+  </script>
+</body>
+</html>

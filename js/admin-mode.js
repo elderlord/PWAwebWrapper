@@ -218,9 +218,53 @@ const AdminMode = {
       </div>
     `;
 
-    // Placeholder for now - will implement save in Task 6
+    // Live toggle label update
+    const autoRetryToggle = document.getElementById('setting-auto-retry');
+    if (autoRetryToggle) {
+      autoRetryToggle.addEventListener('change', (e) => {
+        const label = e.target.closest('.form-toggle').querySelector('span');
+        label.textContent = e.target.checked ? '켜짐' : '꺼짐';
+      });
+    }
+
+    // Save settings
     document.getElementById('btn-save-settings')?.addEventListener('click', () => {
-      alert('설정 저장 기능은 Task 6에서 구현됩니다');
+      const zone = document.getElementById('setting-zone').value;
+      const tapCount = parseInt(document.getElementById('setting-tap-count').value);
+      const autoRetry = document.getElementById('setting-auto-retry').checked;
+      const retryInterval = parseInt(document.getElementById('setting-retry-interval').value) * 1000;
+      const maxAttempts = parseInt(document.getElementById('setting-max-attempts').value);
+
+      // Validate
+      if (tapCount < 3 || tapCount > 10) {
+        alert('탭 횟수는 3-10 사이여야 합니다');
+        return;
+      }
+
+      if (retryInterval < 1000 || retryInterval > 10000) {
+        alert('재시도 간격은 1-10초 사이여야 합니다');
+        return;
+      }
+
+      if (maxAttempts < 1 || maxAttempts > 20) {
+        alert('최대 재시도 횟수는 1-20 사이여야 합니다');
+        return;
+      }
+
+      // Save to storage
+      Storage.updateHiddenTouchConfig({
+        zone,
+        tapCount,
+        tapTimeout: 500 // Fixed for now
+      });
+
+      Storage.updateSettings({
+        autoRetryEnabled: autoRetry,
+        retryInterval,
+        retryMaxAttempts: maxAttempts
+      });
+
+      alert('설정이 저장되었습니다. 히든 터치 변경사항은 앱 재시작 후 적용됩니다.');
     });
   },
 
