@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>App Integration Tests</title>
+  <style>
+    body { font-family: system-ui; padding: 20px; }
+    .test { margin: 15px 0; padding: 10px; border: 1px solid #ccc; }
+    .pass { background: #d4edda; border-color: #c3e6cb; }
+    .fail { background: #f8d7da; border-color: #f5c6cb; }
+    h2 { margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <h1>Task 7: App Integration Tests</h1>
+  <div id="results"></div>
+
+  <script src="/js/storage.js"></script>
+  <script src="/js/hidden-touch.js"></script>
+  <script src="/js/kiosk-mode.js"></script>
+  <script src="/js/admin-mode.js"></script>
+  <script src="/js/app.js"></script>
+
+  <script>
+    const results = document.getElementById('results');
+    let passCount = 0;
+    let failCount = 0;
+
+    function test(name, fn) {
+      try {
+        const result = fn();
+        if (result === true) {
+          passCount++;
+          results.innerHTML += `<div class="test pass">✓ ${name}</div>`;
+        } else {
+          failCount++;
+          results.innerHTML += `<div class="test fail">✗ ${name}: ${result}</div>`;
+        }
+      } catch (e) {
+        failCount++;
+        results.innerHTML += `<div class="test fail">✗ ${name}: ${e.message}</div>`;
+      }
+    }
+
+    // Wait for DOM to be ready
+    window.addEventListener('load', () => {
+      results.innerHTML = '<h2>Initialization Tests</h2>';
+
+      test('App object exists', () => typeof App === 'object');
+
+      test('App.init is a function', () => typeof App.init === 'function');
+
+      test('App.switchToAdminMode is a function', () => typeof App.switchToAdminMode === 'function');
+
+      test('App.switchToKioskMode is a function', () => typeof App.switchToKioskMode === 'function');
+
+      test('App.hiddenTouchDetector is initialized', () => App.hiddenTouchDetector !== null);
+
+      test('HiddenTouchDetector is attached to body', () => {
+        return App.hiddenTouchDetector.element === document.body;
+      });
+
+      test('HiddenTouchDetector has correct config', () => {
+        const config = Storage.getHiddenTouchConfig();
+        return App.hiddenTouchDetector.zone === config.zone &&
+               App.hiddenTouchDetector.tapCount === config.tapCount &&
+               App.hiddenTouchDetector.tapTimeout === config.tapTimeout;
+      });
+
+      results.innerHTML += '<h2>Module Integration Tests</h2>';
+
+      test('KioskMode is initialized', () => KioskMode.container !== null);
+
+      test('AdminMode is initialized', () => AdminMode.container !== null);
+
+      test('Kiosk container is visible initially', () => {
+        return !document.getElementById('kiosk-container').classList.contains('hidden');
+      });
+
+      test('Admin container is hidden initially', () => {
+        return document.getElementById('admin-container').classList.contains('hidden');
+      });
+
+      results.innerHTML += '<h2>Mode Switching Tests</h2>';
+
+      test('switchToAdminMode hides kiosk', () => {
+        App.switchToAdminMode();
+        return document.getElementById('kiosk-container').classList.contains('hidden');
+      });
+
+      test('switchToAdminMode shows admin', () => {
+        return !document.getElementById('admin-container').classList.contains('hidden');
+      });
+
+      test('switchToKioskMode hides admin', () => {
+        App.switchToKioskMode();
+        return document.getElementById('admin-container').classList.contains('hidden');
+      });
+
+      test('switchToKioskMode shows kiosk', () => {
+        return !document.getElementById('kiosk-container').classList.contains('hidden');
+      });
+
+      results.innerHTML += '<h2>Hidden Touch Config Update Tests</h2>';
+
+      test('switchToKioskMode updates hidden touch config', () => {
+        // Change config in storage
+        Storage.updateHiddenTouchConfig({
+          zone: 'top-right',
+          tapCount: 7,
+          tapTimeout: 500
+        });
+
+        // Switch to kiosk mode (should update detector)
+        App.switchToKioskMode();
+
+        // Check if detector was updated
+        return App.hiddenTouchDetector.zone === 'top-right' &&
+               App.hiddenTouchDetector.tapCount === 7;
+      });
+
+      // Reset config
+      Storage.updateHiddenTouchConfig({
+        zone: 'top-left',
+        tapCount: 5,
+        tapTimeout: 500
+      });
+
+      results.innerHTML += '<h2>Webapp Loading Integration Tests</h2>';
+
+      test('switchToKioskMode with webappId loads webapp', () => {
+        // Add a test webapp
+        Storage.addWebapp('Test App', 'https://example.com');
+        const webapps = Storage.loadWebapps();
+        const webappId = webapps[0].id;
+
+        // Switch to kiosk with specific webapp
+        App.switchToKioskMode(webappId);
+
+        // Check if KioskMode loaded the webapp
+        return KioskMode.currentWebappId === webappId;
+      });
+
+      // Summary
+      results.innerHTML += `
+        <h2>Summary</h2>
+        <div class="test ${failCount === 0 ? 'pass' : 'fail'}">
+          Total: ${passCount + failCount} | Passed: ${passCount} | Failed: ${failCount}
+        </div>
+      `;
+
+      console.log(`Tests complete: ${passCount} passed, ${failCount} failed`);
+    });
+  </script>
+</body>
+</html>

@@ -36,7 +36,7 @@ const AdminMode = {
     `;
 
     // Attach event listeners
-    document.getElementById('admin-close').addEventListener('click', () => this.hide());
+    document.getElementById('admin-close').addEventListener('click', () => App.switchToKioskMode());
     document.getElementById('admin-exit').addEventListener('click', () => this._showExitConfirm());
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -158,8 +158,7 @@ const AdminMode = {
       openBtn.addEventListener('click', () => {
         const defaultId = Storage.getDefaultWebappId();
         if (defaultId) {
-          KioskMode.loadWebapp(defaultId);
-          this.hide();
+          App.switchToKioskMode(defaultId);
         } else {
           alert('기본 웹앱을 선택해주세요');
         }
@@ -267,7 +266,7 @@ const AdminMode = {
         retryMaxAttempts: maxAttempts
       });
 
-      alert('설정이 저장되었습니다. 히든 터치 변경사항은 앱 재시작 후 적용됩니다.');
+      alert('설정이 저장되었습니다. 히든 터치 변경사항은 관리자 모드를 닫으면 적용됩니다.');
     });
   },
 
